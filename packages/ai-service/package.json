@@ -14,8 +14,10 @@
   },
   "dependencies": {
     "@dreamcrafter/shared-types": "workspace:*",
+    "@emotion/babel-plugin": "^11.13.5",
     "brain.js": "^2.0.0-beta.23",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "notistack": "^3.0.2"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.202",
