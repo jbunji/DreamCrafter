@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamCrafter - Game Engine Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            box-shadow: 0 0 50px rgba(74, 144, 226, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 300px;
+        }
+        .info h2 {
+            margin-top: 0;
+            color: #4a90e2;
+        }
+        .info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .info li {
+            margin: 5px 0;
+        }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    
+    <div class="info">
+        <h2>DreamCrafter Demo</h2>
+        <p>AI-Powered Match-3 Game Engine</p>
+        <ul>
+            <li>Click gems to select</li>
+            <li>Click adjacent gem to swap</li>
+            <li>Match 3 or more to score</li>
+            <li>ESC to pause</li>
+        </ul>
+        <p><strong>Graphics:</strong> Enhanced with PixiJS shaders and GSAP animations</p>
+    </div>
+
+    <div class="controls">
+        Press F11 for fullscreen | ESC to pause
+    </div>
+
+    <script type="module">
+        import { DreamCrafterGame } from './src/index.ts';
+        
+        // Initialize the game
+        const game = new DreamCrafterGame({
+            parent: 'game-container',
+            onStateChange: (state) => {
+                console.log('Game state changed:', state);
+            }
+        });
+
+        // Game is ready
+        game.on('ready', () => {
+            console.log('DreamCrafter Game Engine initialized!');
+        });
+
+        // Handle fullscreen
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F11') {
+                e.preventDefault();
+                if (!document.fullscreenElement) {
+                    document.getElementById('game-container').requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
