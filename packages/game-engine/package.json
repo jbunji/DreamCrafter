@@ -1,0 +1,31 @@
+{
+  "name": "@dreamcrafter/game-engine",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "preview": "vite preview",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@dreamcrafter/shared-types": "workspace:*",
+    "phaser": "^3.70.0",
+    "pixi.js": "^7.3.3",
+    "@pixi/filter-glow": "^5.1.1",
+    "@pixi/filter-motion-blur": "^5.1.1",
+    "@pixi/particle-emitter": "^5.0.8",
+    "gsap": "^3.12.4",
+    "eventemitter3": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11",
+    "vite-plugin-static-copy": "^1.0.0"
+  }
+}
