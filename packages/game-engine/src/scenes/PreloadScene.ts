@@ -82,102 +82,67 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   private loadAssets(): void {
-    // Load placeholder assets for now
-    // In production, these would be actual game assets
-    
-    // Create placeholder textures
-    this.load.on('start', () => {
-      // Generate colored squares as placeholder gems
-      const colors = {
-        red: 0xff0000,
-        blue: 0x0000ff,
-        green: 0x00ff00,
-        yellow: 0xffff00,
-        purple: 0xff00ff,
-        orange: 0xffa500
-      };
-
-      Object.entries(colors).forEach(([name, color]) => {
-        this.load.on('start', () => {
-          const graphics = this.make.graphics({ x: 0, y: 0 }, false);
-          graphics.fillStyle(color, 1);
-          graphics.fillRoundedRect(0, 0, 80, 80, 20);
-          graphics.generateTexture(`gem_${name}`, 80, 80);
-          graphics.destroy();
-        });
-      });
-
-      // Create placeholder effects
-      const effectColors = {
-        glow_soft: 0xffffff,
-        selection_ring: 0x00ff00,
-        bomb_fuse: 0xff6600,
-        lightning_spark: 0x00ffff,
-        rainbow_shimmer: 0xff00ff
-      };
-
-      Object.entries(effectColors).forEach(([name, color]) => {
-        this.load.on('start', () => {
-          const graphics = this.make.graphics({ x: 0, y: 0 }, false);
-          graphics.fillStyle(color, 0.5);
-          graphics.fillCircle(40, 40, 40);
-          graphics.generateTexture(name, 80, 80);
-          graphics.destroy();
-        });
-      });
-    });
-
-    // Create sprite atlases (placeholder)
+    // Create placeholder gem textures immediately
+    this.createGemTextures();
+    this.createEffectTextures();
     this.createPlaceholderAtlases();
+  }
 
-    // Load audio (placeholder)
-    // this.load.audio('match', 'assets/audio/match.mp3');
-    // this.load.audio('swap', 'assets/audio/swap.mp3');
-    // this.load.audio('cascade', 'assets/audio/cascade.mp3');
-    // this.load.audio('bgm', 'assets/audio/bgm.mp3');
+  private createGemTextures(): void {
+    const colors = {
+      red: 0xff0000,
+      blue: 0x0000ff,
+      green: 0x00ff00,
+      yellow: 0xffff00,
+      purple: 0xff00ff,
+      orange: 0xffa500
+    };
+
+    Object.entries(colors).forEach(([name, color]) => {
+      const graphics = this.make.graphics({ x: 0, y: 0 }, false);
+      
+      // Create glossy gem effect
+      graphics.fillStyle(color, 1);
+      graphics.fillRoundedRect(0, 0, 80, 80, 15);
+      
+      // Add highlight
+      graphics.fillStyle(0xffffff, 0.4);
+      graphics.fillEllipse(25, 25, 30, 20);
+      
+      // Add darker edge
+      graphics.lineStyle(3, Phaser.Display.Color.ValueToColor(color).darken(30).color, 1);
+      graphics.strokeRoundedRect(0, 0, 80, 80, 15);
+      
+      graphics.generateTexture(`gem_${name}`, 80, 80);
+      graphics.destroy();
+    });
+  }
+
+  private createEffectTextures(): void {
+    const effectConfigs = [
+      { name: 'glow_soft', color: 0xffffff, alpha: 0.6 },
+      { name: 'selection_ring', color: 0x00ff00, alpha: 0.8 },
+      { name: 'bomb_fuse', color: 0xff6600, alpha: 0.7 },
+      { name: 'lightning_spark', color: 0x00ffff, alpha: 0.9 },
+      { name: 'rainbow_shimmer', color: 0xff00ff, alpha: 0.5 }
+    ];
+
+    effectConfigs.forEach(({ name, color, alpha }) => {
+      const graphics = this.make.graphics({ x: 0, y: 0 }, false);
+      graphics.fillStyle(color, alpha);
+      graphics.fillCircle(40, 40, 35);
+      
+      // Add glow effect
+      graphics.fillStyle(color, alpha * 0.3);
+      graphics.fillCircle(40, 40, 50);
+      
+      graphics.generateTexture(name, 80, 80);
+      graphics.destroy();
+    });
   }
 
   private createPlaceholderAtlases(): void {
-    // Create a simple atlas for gems
-    const gemAtlas = {
-      frames: {}
-    };
-
-    const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
-    colors.forEach((color, index) => {
-      (gemAtlas.frames as any)[`gem_${color}`] = {
-        frame: { x: 0, y: 0, w: 80, h: 80 },
-        rotated: false,
-        trimmed: false,
-        spriteSourceSize: { x: 0, y: 0, w: 80, h: 80 },
-        sourceSize: { w: 80, h: 80 }
-      };
-    });
-
-    // Register the atlas
-    this.cache.json.add('gems_atlas', gemAtlas);
-
-    // Create effects atlas
-    const effectsAtlas = {
-      frames: {
-        glow_soft: {
-          frame: { x: 0, y: 0, w: 80, h: 80 },
-          rotated: false,
-          trimmed: false,
-          spriteSourceSize: { x: 0, y: 0, w: 80, h: 80 },
-          sourceSize: { w: 80, h: 80 }
-        },
-        selection_ring: {
-          frame: { x: 80, y: 0, w: 80, h: 80 },
-          rotated: false,
-          trimmed: false,
-          spriteSourceSize: { x: 0, y: 0, w: 80, h: 80 },
-          sourceSize: { w: 80, h: 80 }
-        }
-      }
-    };
-
-    this.cache.json.add('effects_atlas', effectsAtlas);
+    // We'll create the atlases in the create() method after textures are ready
   }
 
   private onLoadComplete(): void {
@@ -194,52 +159,87 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Create placeholder textures if loading was too fast
-    const colors = {
-      red: 0xff0000,
-      blue: 0x0000ff,
-      green: 0x00ff00,
-      yellow: 0xffff00,
-      purple: 0xff00ff,
-      orange: 0xffa500
+    // Ensure all gem textures exist
+    if (!this.textures.exists('gem_red')) {
+      this.createGemTextures();
+    }
+    
+    // Ensure all effect textures exist
+    if (!this.textures.exists('glow_soft')) {
+      this.createEffectTextures();
+    }
+
+    // Create proper texture atlases
+    this.createTextureAtlases();
+  }
+
+  private createTextureAtlases(): void {
+    // Create gems atlas
+    const gemAtlas = {
+      frames: {} as any
     };
 
-    Object.entries(colors).forEach(([name, color]) => {
-      if (!this.textures.exists(`gem_${name}`)) {
-        const graphics = this.make.graphics({ x: 0, y: 0 }, false);
-        graphics.fillStyle(color, 1);
-        graphics.fillRoundedRect(0, 0, 80, 80, 20);
-        graphics.generateTexture(`gem_${name}`, 80, 80);
-        graphics.destroy();
-      }
+    const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
+    colors.forEach((color) => {
+      gemAtlas.frames[`gem_${color}`] = {
+        frame: { x: 0, y: 0, w: 80, h: 80 },
+        rotated: false,
+        trimmed: false,
+        spriteSourceSize: { x: 0, y: 0, w: 80, h: 80 },
+        sourceSize: { w: 80, h: 80 }
+      };
     });
 
-    // Create placeholder effects
-    const effectColors = {
-      glow_soft: 0xffffff,
-      selection_ring: 0x00ff00,
-      bomb_fuse: 0xff6600,
-      lightning_spark: 0x00ffff,
-      rainbow_shimmer: 0xff00ff
+    this.cache.json.add('gems_atlas', gemAtlas);
+
+    // Create effects atlas
+    const effectsAtlas = {
+      frames: {
+        glow_soft: {
+          frame: { x: 0, y: 0, w: 80, h: 80 },
+          rotated: false,
+          trimmed: false,
+          spriteSourceSize: { x: 0, y: 0, w: 80, h: 80 },
+          sourceSize: { w: 80, h: 80 }
+        },
+        selection_ring: {
+          frame: { x: 0, y: 0, w: 80, h: 80 },
+          rotated: false,
+          trimmed: false,
+          spriteSourceSize: { x: 0, y: 0, w: 80, h: 80 },
+          sourceSize: { w: 80, h: 80 }
+        }
+      }
     };
 
-    Object.entries(effectColors).forEach(([name, color]) => {
-      if (!this.textures.exists(name)) {
-        const graphics = this.make.graphics({ x: 0, y: 0 }, false);
-        graphics.fillStyle(color, 0.5);
-        graphics.fillCircle(40, 40, 40);
-        graphics.generateTexture(name, 80, 80);
-        graphics.destroy();
-      }
-    });
+    this.cache.json.add('effects_atlas', effectsAtlas);
 
-    // Create texture atlases
+    // Add texture atlases to Phaser
     if (!this.textures.exists('gems')) {
-      this.textures.addAtlas('gems', this.textures.get('gem_red').getSourceImage(), this.cache.json.get('gems_atlas'));
+      // Create a combined texture canvas for the atlas
+      const canvas = document.createElement('canvas');
+      canvas.width = 480; // 6 gems * 80px
+      canvas.height = 80;
+      const ctx = canvas.getContext('2d')!;
+
+      colors.forEach((color, index) => {
+        const texture = this.textures.get(`gem_${color}`);
+        ctx.drawImage(texture.getSourceImage(), index * 80, 0);
+      });
+
+      this.textures.addBase64('gems_combined', canvas.toDataURL());
+      
+      // Update atlas frame positions
+      colors.forEach((color, index) => {
+        gemAtlas.frames[`gem_${color}`].frame.x = index * 80;
+      });
+
+      this.cache.json.add('gems_atlas_updated', gemAtlas);
+      this.textures.addAtlas('gems', 'gems_combined', 'gems_atlas_updated');
     }
 
     if (!this.textures.exists('effects')) {
-      this.textures.addAtlas('effects', this.textures.get('glow_soft').getSourceImage(), this.cache.json.get('effects_atlas'));
+      this.textures.addAtlas('effects', this.textures.get('glow_soft').getSourceImage(), effectsAtlas);
     }
   }
 }
