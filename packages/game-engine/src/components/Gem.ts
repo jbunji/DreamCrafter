@@ -1,10 +1,11 @@
 import * as Phaser from 'phaser';
 import { gsap } from 'gsap';
-import type { Gem as GemData, GemType, Position, SpecialType } from '@dreamcrafter/shared-types';
+import type { Gem as GemData, Position, SpecialType } from '@dreamcrafter/shared-types';
+import { SoundEffects } from '@dreamcrafter/shared-types';
 import { GEM_SIZE } from '../config/GameConfig';
 
 export class Gem extends Phaser.GameObjects.Container {
-  public data: GemData;
+  public gemData: GemData;
   private gemSprite: Phaser.GameObjects.Sprite;
   private glowSprite?: Phaser.GameObjects.Sprite;
   private specialEffectSprite?: Phaser.GameObjects.Sprite;
@@ -23,18 +24,18 @@ export class Gem extends Phaser.GameObjects.Container {
   ) {
     super(scene, x, y);
 
-    this.data = gemData;
+    this.gemData = gemData;
     this.gridX = gridX;
     this.gridY = gridY;
 
-    // Create gem sprite
-    this.gemSprite = scene.add.sprite(0, 0, 'gems', `gem_${gemData.type}`);
+    // Create gem sprite using texture directly
+    this.gemSprite = scene.add.sprite(0, 0, `gem_${this.gemData.type}`);
     this.gemSprite.setDisplaySize(GEM_SIZE * 0.8, GEM_SIZE * 0.8);
     this.add(this.gemSprite);
 
     // Add glow for special gems
-    if (gemData.isSpecial && gemData.specialType) {
-      this.createSpecialEffect(gemData.specialType);
+    if (this.gemData.isSpecial && this.gemData.specialType) {
+      this.createSpecialEffect(this.gemData.specialType);
     }
 
     // Set up interactions
@@ -49,8 +50,8 @@ export class Gem extends Phaser.GameObjects.Container {
   }
 
   private createSpecialEffect(specialType: SpecialType): void {
-    // Create glow effect
-    this.glowSprite = this.scene.add.sprite(0, 0, 'effects', 'glow_soft');
+    // Create glow effect using texture directly
+    this.glowSprite = this.scene.add.sprite(0, 0, 'glow_soft');
     this.glowSprite.setBlendMode(Phaser.BlendModes.ADD);
     this.glowSprite.setScale(1.5);
     this.glowSprite.setAlpha(0.6);
@@ -69,17 +70,14 @@ export class Gem extends Phaser.GameObjects.Container {
     // Add special effect based on type
     switch (specialType) {
       case 'bomb':
-        this.specialEffectSprite = this.scene.add.sprite(0, 0, 'effects', 'bomb_fuse');
-        this.specialEffectSprite.play('fuse_burn');
+        this.specialEffectSprite = this.scene.add.sprite(0, 0, 'bomb_fuse');
         break;
       case 'lightning_h':
       case 'lightning_v':
-        this.specialEffectSprite = this.scene.add.sprite(0, 0, 'effects', 'lightning_spark');
-        this.specialEffectSprite.play('spark_idle');
+        this.specialEffectSprite = this.scene.add.sprite(0, 0, 'lightning_spark');
         break;
       case 'rainbow':
-        this.specialEffectSprite = this.scene.add.sprite(0, 0, 'effects', 'rainbow_shimmer');
-        this.specialEffectSprite.play('shimmer_loop');
+        this.specialEffectSprite = this.scene.add.sprite(0, 0, 'rainbow_shimmer');
         break;
     }
 
@@ -97,6 +95,9 @@ export class Gem extends Phaser.GameObjects.Container {
   private onPointerDown(): void {
     this.emit('gemClicked', this);
     this.playClickAnimation();
+    
+    // Play gem click sound
+    this.scene.sound.play(SoundEffects.GEM_CLICK, { volume: 0.3 });
   }
 
   private onPointerOver(): void {
@@ -160,7 +161,7 @@ export class Gem extends Phaser.GameObjects.Container {
     });
 
     // Add selection glow
-    const selectionGlow = this.scene.add.sprite(0, 0, 'effects', 'selection_ring');
+    const selectionGlow = this.scene.add.sprite(0, 0, 'selection_ring');
     selectionGlow.setName('selection');
     this.add(selectionGlow);
 
@@ -192,11 +193,11 @@ export class Gem extends Phaser.GameObjects.Container {
     }
   }
 
-  public moveTo(x: number, y: number, gridX: number, gridY: number, duration: number = 0.3): Promise<void> {
+  public moveToPosition(x: number, y: number, gridX: number, gridY: number, duration: number = 0.3): Promise<void> {
     return new Promise((resolve) => {
       this.gridX = gridX;
       this.gridY = gridY;
-      this.data.position = { x: gridX, y: gridY };
+      this.gemData.position = { x: gridX, y: gridY };
 
       // Kill any existing move animation
       if (this.moveTimeline) {
@@ -244,7 +245,7 @@ export class Gem extends Phaser.GameObjects.Container {
   public fall(newY: number, gridY: number, delay: number = 0): Promise<void> {
     return new Promise((resolve) => {
       this.gridY = gridY;
-      this.data.position.y = gridY;
+      this.gemData.position.y = gridY;
 
       gsap.to(this, {
         y: newY,
@@ -258,11 +259,14 @@ export class Gem extends Phaser.GameObjects.Container {
 
   public async playMatchAnimation(): Promise<void> {
     // Scale and fade out
-    await gsap.to(this.gemSprite, {
-      scale: 1.5,
-      alpha: 0,
-      duration: 0.3,
-      ease: "back.in(1.7)"
+    return new Promise((resolve) => {
+      gsap.to(this.gemSprite, {
+        scale: 1.5,
+        alpha: 0,
+        duration: 0.3,
+        ease: "back.in(1.7)",
+        onComplete: resolve
+      });
     });
   }
 
@@ -273,18 +277,28 @@ export class Gem extends Phaser.GameObjects.Container {
   public updateGridPosition(gridX: number, gridY: number): void {
     this.gridX = gridX;
     this.gridY = gridY;
-    this.data.position = { x: gridX, y: gridY };
+    this.gemData.position = { x: gridX, y: gridY };
   }
 
   public destroy(): void {
+    // Clean up GSAP animations first
     if (this.moveTimeline) {
       this.moveTimeline.kill();
+      this.moveTimeline = undefined;
     }
     gsap.killTweensOf(this);
     gsap.killTweensOf(this.gemSprite);
     if (this.glowSprite) {
       gsap.killTweensOf(this.glowSprite);
     }
-    super.destroy();
+    if (this.specialEffectSprite) {
+      gsap.killTweensOf(this.specialEffectSprite);
+    }
+    
+    // Remove event listeners
+    this.removeAllListeners();
+    
+    // Destroy with destroyChildren flag
+    super.destroy(true);
   }
 }

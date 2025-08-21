@@ -1,5 +1,7 @@
 import * as Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
+import { SoundEffects, MusicTracks } from '@dreamcrafter/shared-types';
+import { AudioManager } from '../audio/AudioManager';
 import { gsap } from 'gsap';
 
 export class MainMenuScene extends Phaser.Scene {
@@ -7,16 +9,21 @@ export class MainMenuScene extends Phaser.Scene {
   private playButton?: Phaser.GameObjects.Container;
   private settingsButton?: Phaser.GameObjects.Container;
   private leaderboardButton?: Phaser.GameObjects.Container;
+  private audioManager?: AudioManager;
 
   constructor() {
     super({ key: 'MainMenuScene' });
   }
 
   create(): void {
+    this.audioManager = new AudioManager(this);
     this.createBackground();
     this.createTitle();
     this.createButtons();
     this.animateEntrance();
+    
+    // Start main menu music
+    this.audioManager.playMusic(MusicTracks.MAIN_MENU);
   }
 
   private createBackground(): void {
@@ -195,6 +202,7 @@ export class MainMenuScene extends Phaser.Scene {
     });
 
     button.on('pointerdown', () => {
+      this.audioManager?.playSound(SoundEffects.BUTTON_CLICK);
       gsap.to(button, {
         scale: 0.95,
         duration: 0.1,
@@ -216,12 +224,14 @@ export class MainMenuScene extends Phaser.Scene {
 
   private animateEntrance(): void {
     // Title animation
-    gsap.to(this.titleText, {
-      alpha: 1,
-      y: '-=50',
-      duration: 1,
-      ease: "power2.out"
-    });
+    if (this.titleText) {
+      gsap.to(this.titleText, {
+        alpha: 1,
+        y: '-=50',
+        duration: 1,
+        ease: "power2.out"
+      });
+    }
 
     // Buttons animation
     const buttons = [this.playButton, this.settingsButton, this.leaderboardButton];

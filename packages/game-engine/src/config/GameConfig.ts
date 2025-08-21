@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
-import { GemShaderPipeline } from '../shaders/GemShaderPipeline';
-import { GlowShaderPipeline } from '../shaders/GlowShaderPipeline';
+// import { GemShaderPipeline } from '../shaders/GemShaderPipeline';
+// import { GlowShaderPipeline } from '../shaders/GlowShaderPipeline';
 
 export const GAME_WIDTH = 1080;
 export const GAME_HEIGHT = 1920;
@@ -37,10 +37,10 @@ export const GameConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  pipeline: {
-    GemShader: GemShaderPipeline,
-    GlowShader: GlowShaderPipeline,
-  },
+  // pipeline: {
+  //   GemShader: GemShaderPipeline,
+  //   GlowShader: GlowShaderPipeline,
+  // },
   fps: {
     target: 60,
     forceSetTimeOut: false,

@@ -3,3 +3,4 @@ export * from './player';
 export * from './ai';
 export * from './analytics';
 export * from './monetization';
+export * from './audio';

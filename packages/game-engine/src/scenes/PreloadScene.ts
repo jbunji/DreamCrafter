@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
+import { SimpleSoundGenerator } from '../audio/SimpleSoundGenerator';
 
 export class PreloadScene extends Phaser.Scene {
   private progressBar?: Phaser.GameObjects.Graphics;
@@ -86,6 +87,7 @@ export class PreloadScene extends Phaser.Scene {
     this.createGemTextures();
     this.createEffectTextures();
     this.createPlaceholderAtlases();
+    this.generateAudio();
   }
 
   private createGemTextures(): void {
@@ -159,87 +161,18 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Ensure all gem textures exist
-    if (!this.textures.exists('gem_red')) {
-      this.createGemTextures();
-    }
+    // Create textures immediately in create phase
+    this.createGemTextures();
+    this.createEffectTextures();
     
-    // Ensure all effect textures exist
-    if (!this.textures.exists('glow_soft')) {
-      this.createEffectTextures();
-    }
-
-    // Create proper texture atlases
-    this.createTextureAtlases();
+    // Skip atlas creation - use textures directly
+    this.time.delayedCall(100, () => {
+      this.scene.start('MainMenuScene');
+    });
   }
 
-  private createTextureAtlases(): void {
-    // Create gems atlas
-    const gemAtlas = {
-      frames: {} as any
-    };
-
-    const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
-    colors.forEach((color) => {
-      gemAtlas.frames[`gem_${color}`] = {
-        frame: { x: 0, y: 0, w: 80, h: 80 },
-        rotated: false,
-        trimmed: false,
-        spriteSourceSize: { x: 0, y: 0, w: 80, h: 80 },
-        sourceSize: { w: 80, h: 80 }
-      };
-    });
-
-    this.cache.json.add('gems_atlas', gemAtlas);
-
-    // Create effects atlas
-    const effectsAtlas = {
-      frames: {
-        glow_soft: {
-          frame: { x: 0, y: 0, w: 80, h: 80 },
-          rotated: false,
-          trimmed: false,
-          spriteSourceSize: { x: 0, y: 0, w: 80, h: 80 },
-          sourceSize: { w: 80, h: 80 }
-        },
-        selection_ring: {
-          frame: { x: 0, y: 0, w: 80, h: 80 },
-          rotated: false,
-          trimmed: false,
-          spriteSourceSize: { x: 0, y: 0, w: 80, h: 80 },
-          sourceSize: { w: 80, h: 80 }
-        }
-      }
-    };
-
-    this.cache.json.add('effects_atlas', effectsAtlas);
-
-    // Add texture atlases to Phaser
-    if (!this.textures.exists('gems')) {
-      // Create a combined texture canvas for the atlas
-      const canvas = document.createElement('canvas');
-      canvas.width = 480; // 6 gems * 80px
-      canvas.height = 80;
-      const ctx = canvas.getContext('2d')!;
-
-      colors.forEach((color, index) => {
-        const texture = this.textures.get(`gem_${color}`);
-        ctx.drawImage(texture.getSourceImage(), index * 80, 0);
-      });
-
-      this.textures.addBase64('gems_combined', canvas.toDataURL());
-      
-      // Update atlas frame positions
-      colors.forEach((color, index) => {
-        gemAtlas.frames[`gem_${color}`].frame.x = index * 80;
-      });
-
-      this.cache.json.add('gems_atlas_updated', gemAtlas);
-      this.textures.addAtlas('gems', 'gems_combined', 'gems_atlas_updated');
-    }
-
-    if (!this.textures.exists('effects')) {
-      this.textures.addAtlas('effects', this.textures.get('glow_soft').getSourceImage(), effectsAtlas);
-    }
+  private generateAudio(): void {
+    const soundGenerator = new SimpleSoundGenerator(this);
+    soundGenerator.generateSimpleSounds();
   }
 }

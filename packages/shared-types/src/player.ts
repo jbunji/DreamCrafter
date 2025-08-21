@@ -1,3 +1,5 @@
+import { Purchase } from './monetization';
+
 export interface PlayerProfile {
   id: string;
   username: string;

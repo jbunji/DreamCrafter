@@ -1,9 +1,9 @@
 import * as Phaser from 'phaser';
 import { Gem } from '../components/Gem';
 import { EventEmitter } from 'eventemitter3';
+import { GemType, SoundEffects } from '@dreamcrafter/shared-types';
 import type { 
   Gem as GemData, 
-  GemType, 
   Position, 
   Match,
   MoveResult 
@@ -22,7 +22,7 @@ export class GameGrid extends EventEmitter {
   private selectedGem: Gem | null = null;
   private isProcessing: boolean = false;
   private gemTypes: GemType[] = [
-    'red', 'blue', 'green', 'yellow', 'purple', 'orange'
+    GemType.RED, GemType.BLUE, GemType.GREEN, GemType.YELLOW, GemType.PURPLE, GemType.ORANGE
   ];
 
   constructor(scene: Phaser.Scene) {
@@ -58,7 +58,7 @@ export class GameGrid extends EventEmitter {
     if (col >= 2) {
       const gem1 = this.grid[row][col - 1];
       const gem2 = this.grid[row][col - 2];
-      if (gem1?.data.type === gemType && gem2?.data.type === gemType) {
+      if (gem1?.gemData.type === gemType && gem2?.gemData.type === gemType) {
         return true;
       }
     }
@@ -67,7 +67,7 @@ export class GameGrid extends EventEmitter {
     if (row >= 2) {
       const gem1 = this.grid[row - 1][col];
       const gem2 = this.grid[row - 2][col];
-      if (gem1?.data.type === gemType && gem2?.data.type === gemType) {
+      if (gem1?.gemData.type === gemType && gem2?.gemData.type === gemType) {
         return true;
       }
     }
@@ -143,15 +143,18 @@ export class GameGrid extends EventEmitter {
     this.grid[pos1.y][pos1.x] = gem2;
     this.grid[pos2.y][pos2.x] = gem1;
 
+    // Play swap sound
+    this.scene.sound.play(SoundEffects.GEM_SWAP, { volume: 0.4 });
+    
     // Animate swap
     await Promise.all([
-      gem1.moveTo(
+      gem1.moveToPosition(
         GRID_OFFSET_X + pos2.x * GEM_SIZE + GEM_SIZE / 2,
         GRID_OFFSET_Y + pos2.y * GEM_SIZE + GEM_SIZE / 2,
         pos2.x,
         pos2.y
       ),
-      gem2.moveTo(
+      gem2.moveToPosition(
         GRID_OFFSET_X + pos1.x * GEM_SIZE + GEM_SIZE / 2,
         GRID_OFFSET_Y + pos1.y * GEM_SIZE + GEM_SIZE / 2,
         pos1.x,
@@ -181,13 +184,13 @@ export class GameGrid extends EventEmitter {
 
     // Animate swap back
     await Promise.all([
-      gem1.moveTo(
+      gem1.moveToPosition(
         GRID_OFFSET_X + pos1.x * GEM_SIZE + GEM_SIZE / 2,
         GRID_OFFSET_Y + pos1.y * GEM_SIZE + GEM_SIZE / 2,
         pos1.x,
         pos1.y
       ),
-      gem2.moveTo(
+      gem2.moveToPosition(
         GRID_OFFSET_X + pos2.x * GEM_SIZE + GEM_SIZE / 2,
         GRID_OFFSET_Y + pos2.y * GEM_SIZE + GEM_SIZE / 2,
         pos2.x,
@@ -225,15 +228,15 @@ export class GameGrid extends EventEmitter {
 
   private findHorizontalMatch(startCol: number, row: number, processedGems: Set<string>): Match | null {
     const firstGem = this.grid[row][startCol];
-    if (!firstGem || processedGems.has(firstGem.data.id)) return null;
+    if (!firstGem || processedGems.has(firstGem.gemData.id)) return null;
 
-    const gemType = firstGem.data.type;
+    const gemType = firstGem.gemData.type;
     const matchedGems: Gem[] = [firstGem];
 
     // Check consecutive gems
     for (let col = startCol + 1; col < GRID_COLS; col++) {
       const gem = this.grid[row][col];
-      if (gem && gem.data.type === gemType && !processedGems.has(gem.data.id)) {
+      if (gem && gem.gemData.type === gemType && !processedGems.has(gem.gemData.id)) {
         matchedGems.push(gem);
       } else {
         break;
@@ -241,9 +244,9 @@ export class GameGrid extends EventEmitter {
     }
 
     if (matchedGems.length >= 3) {
-      matchedGems.forEach(gem => processedGems.add(gem.data.id));
+      matchedGems.forEach(gem => processedGems.add(gem.gemData.id));
       return {
-        gems: matchedGems.map(g => g.data),
+        gems: matchedGems.map(g => g.gemData),
         type: 'horizontal',
         score: this.calculateMatchScore(matchedGems.length),
       };
@@ -254,15 +257,15 @@ export class GameGrid extends EventEmitter {
 
   private findVerticalMatch(col: number, startRow: number, processedGems: Set<string>): Match | null {
     const firstGem = this.grid[startRow][col];
-    if (!firstGem || processedGems.has(firstGem.data.id)) return null;
+    if (!firstGem || processedGems.has(firstGem.gemData.id)) return null;
 
-    const gemType = firstGem.data.type;
+    const gemType = firstGem.gemData.type;
     const matchedGems: Gem[] = [firstGem];
 
     // Check consecutive gems
     for (let row = startRow + 1; row < GRID_ROWS; row++) {
       const gem = this.grid[row][col];
-      if (gem && gem.data.type === gemType && !processedGems.has(gem.data.id)) {
+      if (gem && gem.gemData.type === gemType && !processedGems.has(gem.gemData.id)) {
         matchedGems.push(gem);
       } else {
         break;
@@ -270,9 +273,9 @@ export class GameGrid extends EventEmitter {
     }
 
     if (matchedGems.length >= 3) {
-      matchedGems.forEach(gem => processedGems.add(gem.data.id));
+      matchedGems.forEach(gem => processedGems.add(gem.gemData.id));
       return {
-        gems: matchedGems.map(g => g.data),
+        gems: matchedGems.map(g => g.gemData),
         type: 'vertical',
         score: this.calculateMatchScore(matchedGems.length),
       };
@@ -333,7 +336,7 @@ export class GameGrid extends EventEmitter {
     for (let row = 0; row < GRID_ROWS; row++) {
       for (let col = 0; col < GRID_COLS; col++) {
         const gem = this.grid[row][col];
-        if (gem && gemsToRemove.has(gem.data.id)) {
+        if (gem && gemsToRemove.has(gem.gemData.id)) {
           animations.push(gem.playMatchAnimation());
           this.emit('gemMatched', gem);
         }
@@ -346,7 +349,7 @@ export class GameGrid extends EventEmitter {
     for (let row = 0; row < GRID_ROWS; row++) {
       for (let col = 0; col < GRID_COLS; col++) {
         const gem = this.grid[row][col];
-        if (gem && gemsToRemove.has(gem.data.id)) {
+        if (gem && gemsToRemove.has(gem.gemData.id)) {
           gem.destroy();
           this.grid[row][col] = null;
         }

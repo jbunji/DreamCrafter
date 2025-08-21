@@ -2,6 +2,8 @@ import * as Phaser from 'phaser';
 import { GameGrid } from '../systems/GameGrid';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
 import type { GameState, PlayerProfile, MoveResult } from '@dreamcrafter/shared-types';
+import { SoundEffects, MusicTracks } from '@dreamcrafter/shared-types';
+import { AudioManager } from '../audio/AudioManager';
 import { gsap } from 'gsap';
 
 export class GameScene extends Phaser.Scene {
@@ -11,6 +13,7 @@ export class GameScene extends Phaser.Scene {
   private levelText?: Phaser.GameObjects.Text;
   private gameState: GameState;
   private isPaused: boolean = false;
+  private audioManager?: AudioManager;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -39,11 +42,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.audioManager = new AudioManager(this);
     this.createBackground();
     this.createUI();
     this.createGameGrid();
     this.setupInputHandling();
     this.animateSceneEntry();
+    
+    // Start gameplay music
+    this.audioManager.playMusic(MusicTracks.GAMEPLAY_CALM);
   }
 
   private createBackground(): void {
@@ -134,6 +141,7 @@ export class GameScene extends Phaser.Scene {
     pauseButton.setInteractive({ useHandCursor: true });
 
     pauseButton.on('pointerdown', () => {
+      this.audioManager?.playSound(SoundEffects.BUTTON_CLICK);
       this.togglePause();
     });
 
@@ -153,6 +161,7 @@ export class GameScene extends Phaser.Scene {
     // Listen for gem matches for effects
     this.gameGrid.on('gemMatched', (gem: any) => {
       this.createMatchEffect(gem.x, gem.y);
+      this.audioManager?.playSound(SoundEffects.GEM_MATCH);
     });
   }
 
@@ -201,6 +210,17 @@ export class GameScene extends Phaser.Scene {
     // Check for cascades
     if (result.cascades && result.cascades > 0) {
       this.showCascadeBonus(result.cascades);
+      this.audioManager?.playSound(SoundEffects.CASCADE);
+    }
+    
+    // Adaptive music based on game intensity
+    if (this.audioManager) {
+      const intensity = this.audioManager.calculateGameIntensity(
+        this.gameState.movesLeft, 
+        30, 
+        result.cascades || 0
+      );
+      this.audioManager.adaptMusicToGameState(intensity);
     }
 
     // Check game over conditions
@@ -228,8 +248,7 @@ export class GameScene extends Phaser.Scene {
 
   private createMatchEffect(x: number, y: number): void {
     // Create particle burst
-    const particles = this.add.particles(x, y, 'effects', {
-      frame: 'glow_soft',
+    const particles = this.add.particles(x, y, 'glow_soft', {
       lifespan: 600,
       speed: { min: 100, max: 300 },
       scale: { start: 0.5, end: 0 },
@@ -283,6 +302,10 @@ export class GameScene extends Phaser.Scene {
 
   private checkGameOver(): void {
     this.gameState.isGameOver = true;
+    
+    // Play game over sound and music
+    this.audioManager?.playSound(SoundEffects.GAME_OVER);
+    this.audioManager?.playMusic(MusicTracks.GAME_OVER);
     
     // Show game over effect
     const overlay = this.add.graphics();
@@ -339,6 +362,7 @@ export class GameScene extends Phaser.Scene {
 
   shutdown(): void {
     this.gameGrid?.destroy();
+    this.audioManager?.destroy();
     gsap.killTweensOf(this);
   }
 }
