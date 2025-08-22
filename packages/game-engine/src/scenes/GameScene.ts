@@ -4,6 +4,8 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
 import type { GameState, PlayerProfile, MoveResult } from '@dreamcrafter/shared-types';
 import { SoundEffects, MusicTracks } from '@dreamcrafter/shared-types';
 import { AudioManager } from '../audio/AudioManager';
+import { PremiumBackgroundRenderer } from '../graphics/PremiumBackgroundRenderer';
+import { AdvancedParticleSystem } from '../graphics/AdvancedParticleSystem';
 import { gsap } from 'gsap';
 
 export class GameScene extends Phaser.Scene {
@@ -14,6 +16,8 @@ export class GameScene extends Phaser.Scene {
   private gameState: GameState;
   private isPaused: boolean = false;
   private audioManager?: AudioManager;
+  private backgroundRenderer?: PremiumBackgroundRenderer;
+  private particleSystem?: AdvancedParticleSystem;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -43,8 +47,11 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.audioManager = new AudioManager(this);
-    this.createBackground();
-    this.createUI();
+    this.backgroundRenderer = new PremiumBackgroundRenderer(this);
+    this.particleSystem = new AdvancedParticleSystem(this);
+    
+    this.createPremiumBackground();
+    this.createEnhancedUI();
     this.createGameGrid();
     this.setupInputHandling();
     this.animateSceneEntry();
@@ -53,100 +60,139 @@ export class GameScene extends Phaser.Scene {
     this.audioManager.playMusic(MusicTracks.GAMEPLAY_CALM);
   }
 
-  private createBackground(): void {
-    // Create gradient background
-    const graphics = this.add.graphics();
-    const colors = [0x1a1a2e, 0x16213e];
-    
-    for (let i = 0; i < GAME_HEIGHT; i++) {
-      const t = i / GAME_HEIGHT;
-      const color = Phaser.Display.Color.Interpolate.ColorWithColor(
-        Phaser.Display.Color.ValueToColor(colors[0]),
-        Phaser.Display.Color.ValueToColor(colors[1]),
-        1,
-        t
-      );
-      
-      graphics.fillStyle(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
-      graphics.fillRect(0, i, GAME_WIDTH, 1);
-    }
-
-    // Add grid background
-    const gridBg = this.add.graphics();
-    gridBg.fillStyle(0x000000, 0.3);
-    gridBg.fillRoundedRect(40, 380, 1000, 900, 20);
+  private createPremiumBackground(): void {
+    this.backgroundRenderer?.createDynamicBackground(GAME_WIDTH, GAME_HEIGHT);
+    this.backgroundRenderer?.createGameBoardFrame(40, 380, 1000, 900);
   }
 
-  private createUI(): void {
-    // Top bar background
-    const topBar = this.add.graphics();
-    topBar.fillStyle(0x000000, 0.5);
-    topBar.fillRect(0, 0, GAME_WIDTH, 150);
+  private createEnhancedUI(): void {
+    this.backgroundRenderer?.createUIElements();
 
-    // Score
-    this.add.text(50, 30, 'SCORE', {
-      fontSize: '24px',
-      fontFamily: 'Arial',
-      color: '#aaaaaa'
+    // Enhanced Score with glow effect
+    this.add.text(70, 65, 'SCORE', {
+      fontSize: '20px',
+      fontFamily: 'Arial Black',
+      color: '#4a90e2',
+      stroke: '#000000',
+      strokeThickness: 2
     });
 
-    this.scoreText = this.add.text(50, 60, '0', {
-      fontSize: '48px',
-      fontFamily: 'Arial',
+    this.scoreText = this.add.text(70, 90, '0', {
+      fontSize: '42px',
+      fontFamily: 'Arial Black',
       color: '#ffffff',
-      fontStyle: 'bold'
+      stroke: '#4a90e2',
+      strokeThickness: 3,
+      shadow: {
+        offsetX: 2,
+        offsetY: 2,
+        color: '#000000',
+        blur: 5,
+        fill: true
+      }
     });
 
-    // Moves
-    this.add.text(GAME_WIDTH / 2 - 50, 30, 'MOVES', {
-      fontSize: '24px',
-      fontFamily: 'Arial',
-      color: '#aaaaaa'
+    // Enhanced Moves counter
+    this.add.text(GAME_WIDTH / 2, 65, 'MOVES', {
+      fontSize: '20px',
+      fontFamily: 'Arial Black',
+      color: '#ff6b47',
+      stroke: '#000000',
+      strokeThickness: 2
     }).setOrigin(0.5, 0);
 
-    this.movesText = this.add.text(GAME_WIDTH / 2, 60, '30', {
-      fontSize: '48px',
-      fontFamily: 'Arial',
+    this.movesText = this.add.text(GAME_WIDTH / 2, 90, '30', {
+      fontSize: '42px',
+      fontFamily: 'Arial Black',
       color: '#ffffff',
-      fontStyle: 'bold'
+      stroke: '#ff6b47',
+      strokeThickness: 3,
+      shadow: {
+        offsetX: 2,
+        offsetY: 2,
+        color: '#000000',
+        blur: 5,
+        fill: true
+      }
     }).setOrigin(0.5, 0);
 
-    // Level
-    this.add.text(GAME_WIDTH - 50, 30, 'LEVEL', {
-      fontSize: '24px',
-      fontFamily: 'Arial',
-      color: '#aaaaaa'
-    }).setOrigin(1, 0);
+    // Enhanced Level indicator
+    this.add.text(GAME_WIDTH - 120, 65, 'LEVEL', {
+      fontSize: '20px',
+      fontFamily: 'Arial Black',
+      color: '#2ed573',
+      stroke: '#000000',
+      strokeThickness: 2
+    }).setOrigin(0.5, 0);
 
-    this.levelText = this.add.text(GAME_WIDTH - 50, 60, '1', {
-      fontSize: '48px',
-      fontFamily: 'Arial',
+    this.levelText = this.add.text(GAME_WIDTH - 120, 90, '1', {
+      fontSize: '42px',
+      fontFamily: 'Arial Black',
       color: '#ffffff',
-      fontStyle: 'bold'
-    }).setOrigin(1, 0);
+      stroke: '#2ed573',
+      strokeThickness: 3,
+      shadow: {
+        offsetX: 2,
+        offsetY: 2,
+        color: '#000000',
+        blur: 5,
+        fill: true
+      }
+    }).setOrigin(0.5, 0);
 
-    // Pause button
-    const pauseButton = this.add.container(GAME_WIDTH - 100, 200);
-    const pauseBg = this.add.graphics();
-    pauseBg.fillStyle(0x4a90e2, 1);
-    pauseBg.fillCircle(0, 0, 40);
-    
-    const pauseIcon = this.add.text(0, 0, '⏸', {
-      fontSize: '32px',
-      color: '#ffffff'
-    }).setOrigin(0.5);
-
-    pauseButton.add([pauseBg, pauseIcon]);
-    pauseButton.setSize(80, 80);
-    pauseButton.setInteractive({ useHandCursor: true });
-
-    pauseButton.on('pointerdown', () => {
-      this.audioManager?.playSound(SoundEffects.BUTTON_CLICK);
-      this.togglePause();
-    });
+    // Enhanced pause button with glow
+    this.createEnhancedPauseButton();
 
     // Update UI with current state
     this.updateUI();
+  }
+
+  private createEnhancedPauseButton(): void {
+    const pauseButton = this.add.container(GAME_WIDTH - 100, 200);
+    
+    // Glowing background
+    const pauseBg = this.add.graphics();
+    pauseBg.fillGradientStyle(0x4a90e2, 0x4a90e2, 0x74b9ff, 0x74b9ff, 1);
+    pauseBg.fillCircle(0, 0, 45);
+    
+    // Inner circle
+    pauseBg.fillStyle(0x2d3748, 0.8);
+    pauseBg.fillCircle(0, 0, 35);
+    
+    // Glow effect
+    pauseBg.lineStyle(4, 0x4a90e2, 0.6);
+    pauseBg.strokeCircle(0, 0, 50);
+    
+    const pauseIcon = this.add.text(0, 0, '⏸', {
+      fontSize: '28px',
+      color: '#ffffff',
+      shadow: {
+        offsetX: 1,
+        offsetY: 1,
+        color: '#000000',
+        blur: 3,
+        fill: true
+      }
+    }).setOrigin(0.5);
+
+    pauseButton.add([pauseBg, pauseIcon]);
+    pauseButton.setSize(100, 100);
+    pauseButton.setInteractive({ useHandCursor: true });
+
+    // Hover effects
+    pauseButton.on('pointerover', () => {
+      gsap.to(pauseButton, { scale: 1.1, duration: 0.2 });
+    });
+
+    pauseButton.on('pointerout', () => {
+      gsap.to(pauseButton, { scale: 1, duration: 0.2 });
+    });
+
+    pauseButton.on('pointerdown', () => {
+      this.audioManager?.playSound(SoundEffects.BUTTON_CLICK);
+      gsap.to(pauseButton, { scale: 0.95, duration: 0.1, yoyo: true, repeat: 1 });
+      this.togglePause();
+    });
   }
 
   private createGameGrid(): void {
@@ -160,7 +206,7 @@ export class GameScene extends Phaser.Scene {
 
     // Listen for gem matches for effects
     this.gameGrid.on('gemMatched', (gem: any) => {
-      this.createMatchEffect(gem.x, gem.y);
+      this.createAdvancedMatchEffect(gem.x, gem.y, gem.gemData?.type || 'red');
       this.audioManager?.playSound(SoundEffects.GEM_MATCH);
     });
   }
@@ -209,8 +255,9 @@ export class GameScene extends Phaser.Scene {
 
     // Check for cascades
     if (result.cascades && result.cascades > 0) {
-      this.showCascadeBonus(result.cascades);
+      this.showEnhancedCascadeBonus(result.cascades);
       this.audioManager?.playSound(SoundEffects.CASCADE);
+      this.particleSystem?.createCascadeEffect(GAME_WIDTH / 2, GAME_HEIGHT / 2, result.cascades);
     }
     
     // Adaptive music based on game intensity
@@ -246,56 +293,62 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private createMatchEffect(x: number, y: number): void {
-    // Create particle burst
-    const particles = this.add.particles(x, y, 'glow_soft', {
-      lifespan: 600,
-      speed: { min: 100, max: 300 },
-      scale: { start: 0.5, end: 0 },
-      blendMode: 'ADD',
-      quantity: 5
-    });
-
-    // Auto-destroy after effect
-    this.time.delayedCall(1000, () => {
-      particles.destroy();
-    });
+  private createAdvancedMatchEffect(x: number, y: number, gemType: string): void {
+    this.particleSystem?.createGemMatchExplosion(x, y, gemType);
   }
 
-  private showCascadeBonus(cascades: number): void {
+  private showEnhancedCascadeBonus(cascades: number): void {
     const bonusText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, `${cascades}x CASCADE!`, {
-      fontSize: '64px',
-      fontFamily: 'Arial',
-      color: '#ffff00',
-      stroke: '#ff6600',
-      strokeThickness: 8,
+      fontSize: '72px',
+      fontFamily: 'Arial Black',
+      color: '#ffffff',
+      stroke: '#ffd700',
+      strokeThickness: 10,
       shadow: {
         offsetX: 0,
-        offsetY: 4,
+        offsetY: 6,
         color: '#000000',
-        blur: 10,
+        blur: 15,
         fill: true
       }
     }).setOrigin(0.5);
 
+    // Add background glow
+    const glowBg = this.add.graphics();
+    glowBg.setPosition(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+    glowBg.fillStyle(0xffd700, 0.3);
+    glowBg.fillCircle(0, 0, 200);
+
     gsap.fromTo(bonusText, 
-      { scale: 0, rotation: -0.2 },
+      { scale: 0, rotation: -0.3, alpha: 0 },
       { 
-        scale: 1.5, 
-        rotation: 0.2,
-        duration: 0.5,
-        ease: "back.out(1.7)",
+        scale: 1.8, 
+        rotation: 0.3,
+        alpha: 1,
+        duration: 0.6,
+        ease: "back.out(2)",
         onComplete: () => {
           gsap.to(bonusText, {
             scale: 0,
             alpha: 0,
-            y: '-=100',
-            duration: 0.5,
-            delay: 0.5,
-            ease: "power2.in",
+            y: '-=150',
+            duration: 0.8,
+            delay: 0.8,
+            ease: "power3.in",
             onComplete: () => bonusText.destroy()
           });
         }
+      }
+    );
+
+    gsap.fromTo(glowBg,
+      { scale: 0, alpha: 0.3 },
+      {
+        scale: 1.5,
+        alpha: 0,
+        duration: 1.4,
+        ease: "power2.out",
+        onComplete: () => glowBg.destroy()
       }
     );
   }
@@ -363,6 +416,8 @@ export class GameScene extends Phaser.Scene {
   shutdown(): void {
     this.gameGrid?.destroy();
     this.audioManager?.destroy();
+    this.backgroundRenderer?.destroy();
+    this.particleSystem?.destroy();
     gsap.killTweensOf(this);
   }
 }

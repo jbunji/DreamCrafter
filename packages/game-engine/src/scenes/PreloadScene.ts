@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
 import { SimpleSoundGenerator } from '../audio/SimpleSoundGenerator';
+import { PremiumGemRenderer } from '../graphics/PremiumGemRenderer';
 
 export class PreloadScene extends Phaser.Scene {
   private progressBar?: Phaser.GameObjects.Graphics;
@@ -83,10 +84,9 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   private loadAssets(): void {
-    // Create placeholder gem textures immediately
-    this.createGemTextures();
-    this.createEffectTextures();
-    this.createPlaceholderAtlases();
+    // Create high-quality graphics
+    this.createPremiumGemTextures();
+    this.createAdvancedEffectTextures();
     this.generateAudio();
   }
 
@@ -143,9 +143,6 @@ export class PreloadScene extends Phaser.Scene {
     });
   }
 
-  private createPlaceholderAtlases(): void {
-    // We'll create the atlases in the create() method after textures are ready
-  }
 
   private onLoadComplete(): void {
     this.progressBar?.destroy();
@@ -174,5 +171,17 @@ export class PreloadScene extends Phaser.Scene {
   private generateAudio(): void {
     const soundGenerator = new SimpleSoundGenerator(this);
     soundGenerator.generateSimpleSounds();
+  }
+
+  private createPremiumGemTextures(): void {
+    const gemRenderer = new PremiumGemRenderer(this);
+    gemRenderer.createHighQualityGemTextures();
+    gemRenderer.createAdvancedEffectTextures();
+    gemRenderer.createParticleTextures();
+  }
+
+  private createAdvancedEffectTextures(): void {
+    // Additional advanced effect textures are created by PremiumGemRenderer
+    // This method is kept for future expansion
   }
 }

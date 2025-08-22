@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
 import { SoundEffects, MusicTracks } from '@dreamcrafter/shared-types';
 import { AudioManager } from '../audio/AudioManager';
+import { PremiumBackgroundRenderer } from '../graphics/PremiumBackgroundRenderer';
 import { gsap } from 'gsap';
 
 export class MainMenuScene extends Phaser.Scene {
@@ -10,6 +11,7 @@ export class MainMenuScene extends Phaser.Scene {
   private settingsButton?: Phaser.GameObjects.Container;
   private leaderboardButton?: Phaser.GameObjects.Container;
   private audioManager?: AudioManager;
+  private backgroundRenderer?: PremiumBackgroundRenderer;
 
   constructor() {
     super({ key: 'MainMenuScene' });
@@ -17,188 +19,117 @@ export class MainMenuScene extends Phaser.Scene {
 
   create(): void {
     this.audioManager = new AudioManager(this);
-    this.createBackground();
-    this.createTitle();
-    this.createButtons();
+    this.backgroundRenderer = new PremiumBackgroundRenderer(this);
+    
+    this.createPremiumBackground();
+    this.createEnhancedTitle();
+    this.createEnhancedButtons();
     this.animateEntrance();
     
     // Start main menu music
     this.audioManager.playMusic(MusicTracks.MAIN_MENU);
   }
 
-  private createBackground(): void {
-    // Gradient background
-    const graphics = this.add.graphics();
-    const colors = [0x1a1a2e, 0x16213e, 0x0f3460];
-    const stops = [0, 0.5, 1];
-
-    for (let i = 0; i < GAME_HEIGHT; i++) {
-      const t = i / GAME_HEIGHT;
-      let color;
-      
-      if (t <= stops[1]) {
-        const localT = t / stops[1];
-        color = Phaser.Display.Color.Interpolate.ColorWithColor(
-          Phaser.Display.Color.ValueToColor(colors[0]),
-          Phaser.Display.Color.ValueToColor(colors[1]),
-          1,
-          localT
-        );
-      } else {
-        const localT = (t - stops[1]) / (1 - stops[1]);
-        color = Phaser.Display.Color.Interpolate.ColorWithColor(
-          Phaser.Display.Color.ValueToColor(colors[1]),
-          Phaser.Display.Color.ValueToColor(colors[2]),
-          1,
-          localT
-        );
-      }
-
-      graphics.fillStyle(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
-      graphics.fillRect(0, i, GAME_WIDTH, 1);
-    }
-
-    // Add floating particles
-    this.createFloatingParticles();
+  private createPremiumBackground(): void {
+    this.backgroundRenderer?.createDynamicBackground(GAME_WIDTH, GAME_HEIGHT);
   }
 
-  private createFloatingParticles(): void {
-    for (let i = 0; i < 20; i++) {
-      const particle = this.add.circle(
-        Phaser.Math.Between(0, GAME_WIDTH),
-        Phaser.Math.Between(0, GAME_HEIGHT),
-        Phaser.Math.Between(2, 6),
-        0xffffff,
-        Phaser.Math.FloatBetween(0.1, 0.3)
-      );
-
-      gsap.to(particle, {
-        y: `-=${Phaser.Math.Between(100, 300)}`,
-        x: `+=${Phaser.Math.Between(-50, 50)}`,
-        alpha: 0,
-        duration: Phaser.Math.Between(10, 20),
-        repeat: -1,
-        delay: Phaser.Math.FloatBetween(0, 10),
-        ease: "none",
-        onRepeat: () => {
-          particle.x = Phaser.Math.Between(0, GAME_WIDTH);
-          particle.y = GAME_HEIGHT + 50;
-          particle.alpha = Phaser.Math.FloatBetween(0.1, 0.3);
-        }
-      });
-    }
-  }
-
-  private createTitle(): void {
-    this.titleText = this.add.text(GAME_WIDTH / 2, 300, 'DreamCrafter', {
-      fontSize: '72px',
-      fontFamily: 'Arial',
+  private createEnhancedTitle(): void {
+    this.titleText = this.add.text(GAME_WIDTH / 2, 200, 'DREAMCRAFTER', {
+      fontSize: '96px',
+      fontFamily: 'Arial Black',
       color: '#ffffff',
-      stroke: '#000000',
+      stroke: '#4a90e2',
       strokeThickness: 8,
       shadow: {
-        offsetX: 0,
-        offsetY: 8,
+        offsetX: 4,
+        offsetY: 4,
         color: '#000000',
-        blur: 15,
+        blur: 10,
         fill: true
       }
-    });
-    this.titleText.setOrigin(0.5);
-    this.titleText.setAlpha(0);
+    }).setOrigin(0.5).setAlpha(0);
 
     // Add subtitle
-    const subtitle = this.add.text(GAME_WIDTH / 2, 380, 'AI-Powered Match-3 Adventure', {
-      fontSize: '24px',
+    const subtitle = this.add.text(GAME_WIDTH / 2, 280, 'Match • Dream • Craft', {
+      fontSize: '32px',
       fontFamily: 'Arial',
-      color: '#aaaaaa',
+      color: '#74b9ff',
+      stroke: '#000000',
+      strokeThickness: 2
+    }).setOrigin(0.5).setAlpha(0);
+
+    // Animated entrance for title
+    gsap.to(this.titleText, {
+      alpha: 1,
+      y: 180,
+      duration: 1.2,
+      ease: "bounce.out"
+    });
+
+    gsap.to(subtitle, {
+      alpha: 1,
+      delay: 0.5,
+      duration: 0.8,
+      ease: "power2.out"
+    });
+  }
+
+  private createEnhancedButtons(): void {
+    this.playButton = this.createEnhancedButton(GAME_WIDTH / 2, 450, 'PLAY', 0x4a90e2, () => {
+      this.startGame();
+    });
+
+    this.settingsButton = this.createEnhancedButton(GAME_WIDTH / 2, 570, 'SETTINGS', 0xff6b47, () => {
+      console.log('Settings clicked');
+    });
+
+    this.leaderboardButton = this.createEnhancedButton(GAME_WIDTH / 2, 690, 'LEADERBOARD', 0x2ed573, () => {
+      console.log('Leaderboard clicked');
+    });
+  }
+
+  private createEnhancedButton(x: number, y: number, text: string, color: number, callback: () => void): Phaser.GameObjects.Container {
+    const button = this.add.container(x, y);
+    
+    // Button background with gradient effect
+    const bg = this.add.graphics();
+    bg.fillGradientStyle(color, color, Phaser.Display.Color.ValueToColor(color).darken(20).color, Phaser.Display.Color.ValueToColor(color).darken(20).color, 1);
+    bg.fillRoundedRect(-150, -35, 300, 70, 15);
+    
+    // Glow effect
+    bg.lineStyle(4, color, 0.8);
+    bg.strokeRoundedRect(-155, -40, 310, 80, 18);
+    
+    // Button text
+    const buttonText = this.add.text(0, 0, text, {
+      fontSize: '36px',
+      fontFamily: 'Arial Black',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 3,
       shadow: {
-        offsetX: 0,
+        offsetX: 2,
         offsetY: 2,
         color: '#000000',
         blur: 5,
         fill: true
       }
-    });
-    subtitle.setOrigin(0.5);
-    subtitle.setAlpha(0);
-
-    gsap.to(subtitle, {
-      alpha: 1,
-      delay: 0.5,
-      duration: 1,
-      ease: "power2.out"
-    });
-  }
-
-  private createButtons(): void {
-    const buttonY = 800;
-    const buttonSpacing = 150;
-
-    // Play Button
-    this.playButton = this.createButton(GAME_WIDTH / 2, buttonY, 'PLAY', () => {
-      this.startGame();
-    });
-
-    // Settings Button
-    this.settingsButton = this.createButton(
-      GAME_WIDTH / 2 - buttonSpacing,
-      buttonY + 120,
-      'SETTINGS',
-      () => {
-        console.log('Settings clicked');
-      }
-    );
-
-    // Leaderboard Button
-    this.leaderboardButton = this.createButton(
-      GAME_WIDTH / 2 + buttonSpacing,
-      buttonY + 120,
-      'SCORES',
-      () => {
-        console.log('Leaderboard clicked');
-      }
-    );
-  }
-
-  private createButton(x: number, y: number, text: string, callback: () => void): Phaser.GameObjects.Container {
-    const button = this.add.container(x, y);
-
-    // Button background
-    const bg = this.add.graphics();
-    bg.fillStyle(0x4a90e2, 1);
-    bg.fillRoundedRect(-150, -40, 300, 80, 40);
-    
-    // Button text
-    const buttonText = this.add.text(0, 0, text, {
-      fontSize: '32px',
-      fontFamily: 'Arial',
-      color: '#ffffff',
-      fontStyle: 'bold'
-    });
-    buttonText.setOrigin(0.5);
+    }).setOrigin(0.5);
 
     button.add([bg, buttonText]);
-    button.setSize(300, 80);
+    button.setSize(300, 70);
     button.setInteractive({ useHandCursor: true });
-    button.setAlpha(0);
-    button.setScale(0.8);
 
-    // Hover effects
+    // Enhanced hover effects
     button.on('pointerover', () => {
-      gsap.to(button, {
-        scale: 1.1,
-        duration: 0.2,
-        ease: "back.out(1.7)"
-      });
+      gsap.to(button, { scale: 1.05, duration: 0.2, ease: "power2.out" });
+      gsap.to(bg, { alpha: 1.2, duration: 0.2 });
     });
 
     button.on('pointerout', () => {
-      gsap.to(button, {
-        scale: 1,
-        duration: 0.2,
-        ease: "power2.out"
-      });
+      gsap.to(button, { scale: 1, duration: 0.2, ease: "power2.out" });
+      gsap.to(bg, { alpha: 1, duration: 0.2 });
     });
 
     button.on('pointerdown', () => {
@@ -206,15 +137,9 @@ export class MainMenuScene extends Phaser.Scene {
       gsap.to(button, {
         scale: 0.95,
         duration: 0.1,
-        ease: "power2.in"
-      });
-    });
-
-    button.on('pointerup', () => {
-      gsap.to(button, {
-        scale: 1.1,
-        duration: 0.1,
-        ease: "power2.out",
+        yoyo: true,
+        repeat: 1,
+        ease: "power2.inOut",
         onComplete: callback
       });
     });
