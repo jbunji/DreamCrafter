@@ -61,122 +61,140 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createPremiumBackground(): void {
-    this.backgroundRenderer?.createDynamicBackground(GAME_WIDTH, GAME_HEIGHT);
-    this.backgroundRenderer?.createGameBoardFrame(40, 380, 1000, 900);
+    // Create a clean gradient background
+    const graphics = this.add.graphics();
+    
+    // Simple two-tone gradient
+    const colors = [0x1e3a5f, 0x0f1e3d];
+    for (let i = 0; i < GAME_HEIGHT; i++) {
+      const t = i / GAME_HEIGHT;
+      const color = Phaser.Display.Color.Interpolate.ColorWithColor(
+        Phaser.Display.Color.ValueToColor(colors[0]),
+        Phaser.Display.Color.ValueToColor(colors[1]),
+        1,
+        t
+      );
+      graphics.fillStyle(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
+      graphics.fillRect(0, i, GAME_WIDTH, 1);
+    }
+    
+    // Create game board background
+    this.createGameBoard();
+  }
+  
+  private createGameBoard(): void {
+    const boardX = 40;
+    const boardY = 380;
+    const tileSize = 100;
+    const boardPadding = 20;
+    
+    // Board background
+    const boardBg = this.add.graphics();
+    boardBg.fillStyle(0x0a0a0a, 0.8);
+    boardBg.fillRoundedRect(
+      boardX - boardPadding, 
+      boardY - boardPadding, 
+      9 * tileSize + boardPadding * 2, 
+      9 * tileSize + boardPadding * 2, 
+      20
+    );
+    
+    // Board border
+    boardBg.lineStyle(4, 0x2a4d69, 1);
+    boardBg.strokeRoundedRect(
+      boardX - boardPadding, 
+      boardY - boardPadding, 
+      9 * tileSize + boardPadding * 2, 
+      9 * tileSize + boardPadding * 2, 
+      20
+    );
+    
+    // Create checkered pattern with premium tiles
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        const x = boardX + col * tileSize;
+        const y = boardY + row * tileSize;
+        const isDark = (row + col) % 2 === 0;
+        
+        const tileName = isDark ? 'board_tile_dark' : 'board_tile_light';
+        const tile = this.add.image(x + tileSize / 2, y + tileSize / 2, tileName);
+        tile.setScale(0.9);
+        tile.setAlpha(0.7);
+      }
+    }
   }
 
   private createEnhancedUI(): void {
-    this.backgroundRenderer?.createUIElements();
-
-    // Enhanced Score with glow effect
-    this.add.text(70, 65, 'SCORE', {
-      fontSize: '20px',
+    // Score panel
+    this.add.text(100, 40, 'SCORE', {
+      fontSize: '22px',
       fontFamily: 'Arial Black',
-      color: '#4a90e2',
-      stroke: '#000000',
-      strokeThickness: 2
+      color: '#ffffff'
+    });
+    
+    this.scoreText = this.add.text(100, 70, '0', {
+      fontSize: '36px',
+      fontFamily: 'Arial Black',
+      color: '#ffffff'
     });
 
-    this.scoreText = this.add.text(70, 90, '0', {
-      fontSize: '42px',
+    // Moves panel
+    this.add.text(GAME_WIDTH / 2, 40, 'MOVES', {
+      fontSize: '22px',
       fontFamily: 'Arial Black',
-      color: '#ffffff',
-      stroke: '#4a90e2',
-      strokeThickness: 3,
-      shadow: {
-        offsetX: 2,
-        offsetY: 2,
-        color: '#000000',
-        blur: 5,
-        fill: true
-      }
-    });
-
-    // Enhanced Moves counter
-    this.add.text(GAME_WIDTH / 2, 65, 'MOVES', {
-      fontSize: '20px',
+      color: '#ffffff'
+    }).setOrigin(0.5);
+    
+    this.movesText = this.add.text(GAME_WIDTH / 2, 70, '30', {
+      fontSize: '36px',
       fontFamily: 'Arial Black',
-      color: '#ff6b47',
-      stroke: '#000000',
-      strokeThickness: 2
-    }).setOrigin(0.5, 0);
+      color: '#ffffff'
+    }).setOrigin(0.5);
 
-    this.movesText = this.add.text(GAME_WIDTH / 2, 90, '30', {
-      fontSize: '42px',
+    // Level panel
+    this.add.text(GAME_WIDTH - 200, 40, 'LEVEL', {
+      fontSize: '22px',
       fontFamily: 'Arial Black',
-      color: '#ffffff',
-      stroke: '#ff6b47',
-      strokeThickness: 3,
-      shadow: {
-        offsetX: 2,
-        offsetY: 2,
-        color: '#000000',
-        blur: 5,
-        fill: true
-      }
-    }).setOrigin(0.5, 0);
-
-    // Enhanced Level indicator
-    this.add.text(GAME_WIDTH - 120, 65, 'LEVEL', {
-      fontSize: '20px',
+      color: '#ffffff'
+    }).setOrigin(0.5);
+    
+    this.levelText = this.add.text(GAME_WIDTH - 200, 70, '1', {
+      fontSize: '36px',
       fontFamily: 'Arial Black',
-      color: '#2ed573',
-      stroke: '#000000',
-      strokeThickness: 2
-    }).setOrigin(0.5, 0);
+      color: '#ffffff'
+    }).setOrigin(0.5);
 
-    this.levelText = this.add.text(GAME_WIDTH - 120, 90, '1', {
-      fontSize: '42px',
-      fontFamily: 'Arial Black',
-      color: '#ffffff',
-      stroke: '#2ed573',
-      strokeThickness: 3,
-      shadow: {
-        offsetX: 2,
-        offsetY: 2,
-        color: '#000000',
-        blur: 5,
-        fill: true
-      }
-    }).setOrigin(0.5, 0);
-
-    // Enhanced pause button with glow
-    this.createEnhancedPauseButton();
+    // Clean pause button
+    this.createCleanPauseButton();
 
     // Update UI with current state
     this.updateUI();
   }
 
-  private createEnhancedPauseButton(): void {
+  private createCleanPauseButton(): void {
     const pauseButton = this.add.container(GAME_WIDTH - 100, 200);
     
-    // Glowing background
+    // Clean circular button background
     const pauseBg = this.add.graphics();
-    pauseBg.fillGradientStyle(0x4a90e2, 0x4a90e2, 0x74b9ff, 0x74b9ff, 1);
-    pauseBg.fillCircle(0, 0, 45);
+    pauseBg.fillStyle(0x9c27b0, 1);
+    pauseBg.fillCircle(0, 0, 40);
     
     // Inner circle
-    pauseBg.fillStyle(0x2d3748, 0.8);
+    pauseBg.fillStyle(0xab47bc, 0.5);
     pauseBg.fillCircle(0, 0, 35);
     
-    // Glow effect
-    pauseBg.lineStyle(4, 0x4a90e2, 0.6);
-    pauseBg.strokeCircle(0, 0, 50);
+    // Border
+    pauseBg.lineStyle(3, 0x6a1b9a, 1);
+    pauseBg.strokeCircle(0, 0, 40);
     
-    const pauseIcon = this.add.text(0, 0, '⏸', {
-      fontSize: '28px',
-      color: '#ffffff',
-      shadow: {
-        offsetX: 1,
-        offsetY: 1,
-        color: '#000000',
-        blur: 3,
-        fill: true
-      }
-    }).setOrigin(0.5);
-
+    // Pause icon (two vertical bars)
+    const pauseIcon = this.add.graphics();
+    pauseIcon.fillStyle(0xffffff, 1);
+    pauseIcon.fillRoundedRect(-12, -15, 8, 30, 3);
+    pauseIcon.fillRoundedRect(4, -15, 8, 30, 3);
+    
     pauseButton.add([pauseBg, pauseIcon]);
-    pauseButton.setSize(100, 100);
+    pauseButton.setSize(80, 80);
     pauseButton.setInteractive({ useHandCursor: true });
 
     // Hover effects
@@ -194,6 +212,7 @@ export class GameScene extends Phaser.Scene {
       this.togglePause();
     });
   }
+
 
   private createGameGrid(): void {
     this.gameGrid = new GameGrid(this);
@@ -257,7 +276,6 @@ export class GameScene extends Phaser.Scene {
     if (result.cascades && result.cascades > 0) {
       this.showEnhancedCascadeBonus(result.cascades);
       this.audioManager?.playSound(SoundEffects.CASCADE);
-      this.particleSystem?.createCascadeEffect(GAME_WIDTH / 2, GAME_HEIGHT / 2, result.cascades);
     }
     
     // Adaptive music based on game intensity
@@ -294,63 +312,111 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createAdvancedMatchEffect(x: number, y: number, gemType: string): void {
-    this.particleSystem?.createGemMatchExplosion(x, y, gemType);
+    // Create clean sparkle effect instead of heavy particles
+    const sparkleCount = 8;
+    for (let i = 0; i < sparkleCount; i++) {
+      const angle = (i / sparkleCount) * Math.PI * 2;
+      const distance = 30;
+      const sparkle = this.add.image(x, y, 'sparkle_clean');
+      sparkle.setScale(0.5 + Math.random() * 0.5);
+      sparkle.setAlpha(0.8);
+      
+      const targetX = x + Math.cos(angle) * distance;
+      const targetY = y + Math.sin(angle) * distance;
+      
+      gsap.to(sparkle, {
+        x: targetX,
+        y: targetY,
+        scale: 0,
+        alpha: 0,
+        duration: 0.6,
+        ease: 'power2.out',
+        onComplete: () => sparkle.destroy()
+      });
+    }
+    
+    // Add a central glow
+    const glow = this.add.image(x, y, 'glow_orb_clean');
+    glow.setScale(0.5);
+    glow.setAlpha(0.6);
+    glow.setTint(this.getGemColor(gemType));
+    
+    gsap.to(glow, {
+      scale: 1.5,
+      alpha: 0,
+      duration: 0.4,
+      ease: 'power2.out',
+      onComplete: () => glow.destroy()
+    });
+  }
+
+  private getGemColor(gemType: string): number {
+    const colors: { [key: string]: number } = {
+      red: 0xff1744,
+      blue: 0x2196f3,
+      green: 0x4caf50,
+      yellow: 0xffc107,
+      purple: 0x9c27b0,
+      orange: 0xff6f00
+    };
+    return colors[gemType] || 0xffffff;
   }
 
   private showEnhancedCascadeBonus(cascades: number): void {
-    const bonusText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, `${cascades}x CASCADE!`, {
-      fontSize: '72px',
+    const messages = ['SWEET!', 'TASTY!', 'DIVINE!', 'DELICIOUS!', 'SUGAR RUSH!'];
+    const message = cascades >= messages.length ? messages[messages.length - 1] : messages[cascades - 1];
+    
+    const bonusText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, message, {
+      fontSize: '64px',
       fontFamily: 'Arial Black',
       color: '#ffffff',
-      stroke: '#ffd700',
-      strokeThickness: 10,
-      shadow: {
-        offsetX: 0,
-        offsetY: 6,
-        color: '#000000',
-        blur: 15,
-        fill: true
-      }
+      stroke: '#ff6f00',
+      strokeThickness: 8
     }).setOrigin(0.5);
 
-    // Add background glow
-    const glowBg = this.add.graphics();
-    glowBg.setPosition(GAME_WIDTH / 2, GAME_HEIGHT / 2);
-    glowBg.fillStyle(0xffd700, 0.3);
-    glowBg.fillCircle(0, 0, 200);
-
+    // Simple clean animation
     gsap.fromTo(bonusText, 
-      { scale: 0, rotation: -0.3, alpha: 0 },
+      { scale: 0, alpha: 0 },
       { 
-        scale: 1.8, 
-        rotation: 0.3,
+        scale: 1.5, 
         alpha: 1,
-        duration: 0.6,
-        ease: "back.out(2)",
+        duration: 0.4,
+        ease: "back.out(1.7)",
         onComplete: () => {
           gsap.to(bonusText, {
-            scale: 0,
+            scale: 0.8,
             alpha: 0,
-            y: '-=150',
-            duration: 0.8,
-            delay: 0.8,
-            ease: "power3.in",
+            y: '-=100',
+            duration: 0.6,
+            delay: 0.5,
+            ease: "power2.in",
             onComplete: () => bonusText.destroy()
           });
         }
       }
     );
 
-    gsap.fromTo(glowBg,
-      { scale: 0, alpha: 0.3 },
-      {
-        scale: 1.5,
+    // Add sparkles around text
+    const sparkleCount = 6;
+    for (let i = 0; i < sparkleCount; i++) {
+      const angle = (i / sparkleCount) * Math.PI * 2;
+      const distance = 100;
+      const sparkle = this.add.image(
+        GAME_WIDTH / 2 + Math.cos(angle) * distance,
+        GAME_HEIGHT / 2 + Math.sin(angle) * distance,
+        'sparkle_clean'
+      );
+      sparkle.setScale(0);
+      
+      gsap.to(sparkle, {
+        scale: 1,
         alpha: 0,
-        duration: 1.4,
-        ease: "power2.out",
-        onComplete: () => glowBg.destroy()
-      }
-    );
+        duration: 1,
+        delay: i * 0.1,
+        ease: 'power2.out',
+        onComplete: () => sparkle.destroy()
+      });
+    }
   }
 
   private checkGameOver(): void {

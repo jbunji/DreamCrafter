@@ -1,7 +1,6 @@
 import * as Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
 import { SimpleSoundGenerator } from '../audio/SimpleSoundGenerator';
-import { PremiumGemRenderer } from '../graphics/PremiumGemRenderer';
 
 export class PreloadScene extends Phaser.Scene {
   private progressBar?: Phaser.GameObjects.Graphics;
@@ -84,61 +83,68 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   private loadAssets(): void {
-    // Create high-quality graphics
-    this.createPremiumGemTextures();
-    this.createAdvancedEffectTextures();
+    // Create simple, clean graphics
+    this.createSimpleGemTextures();
+    this.createSimpleEffectTextures();
     this.generateAudio();
   }
 
-  private createGemTextures(): void {
+  private createSimpleGemTextures(): void {
     const colors = {
-      red: 0xff0000,
-      blue: 0x0000ff,
-      green: 0x00ff00,
-      yellow: 0xffff00,
-      purple: 0xff00ff,
-      orange: 0xffa500
+      red: 0xff4444,
+      blue: 0x4488ff,
+      green: 0x44ff44,
+      yellow: 0xffff44,
+      purple: 0xff44ff,
+      orange: 0xffaa44
     };
 
     Object.entries(colors).forEach(([name, color]) => {
       const graphics = this.make.graphics({ x: 0, y: 0 }, false);
+      const size = 80;
+      const padding = 2;
       
-      // Create glossy gem effect
+      // Create simple clean gem shape
       graphics.fillStyle(color, 1);
-      graphics.fillRoundedRect(0, 0, 80, 80, 15);
+      graphics.fillCircle(size / 2, size / 2, (size / 2) - padding);
       
-      // Add highlight
-      graphics.fillStyle(0xffffff, 0.4);
-      graphics.fillEllipse(25, 25, 30, 20);
+      // Add simple subtle highlight
+      graphics.fillStyle(0xffffff, 0.3);
+      graphics.fillCircle(size * 0.4, size * 0.3, size * 0.15);
       
-      // Add darker edge
-      graphics.lineStyle(3, Phaser.Display.Color.ValueToColor(color).darken(30).color, 1);
-      graphics.strokeRoundedRect(0, 0, 80, 80, 15);
+      // Add clean border
+      graphics.lineStyle(2, Phaser.Display.Color.ValueToColor(color).darken(20).color, 1);
+      graphics.strokeCircle(size / 2, size / 2, (size / 2) - padding);
       
-      graphics.generateTexture(`gem_${name}`, 80, 80);
+      graphics.generateTexture(`gem_${name}`, size, size);
       graphics.destroy();
     });
   }
 
-  private createEffectTextures(): void {
+  private createSimpleEffectTextures(): void {
     const effectConfigs = [
-      { name: 'glow_soft', color: 0xffffff, alpha: 0.6 },
-      { name: 'selection_ring', color: 0x00ff00, alpha: 0.8 },
-      { name: 'bomb_fuse', color: 0xff6600, alpha: 0.7 },
-      { name: 'lightning_spark', color: 0x00ffff, alpha: 0.9 },
-      { name: 'rainbow_shimmer', color: 0xff00ff, alpha: 0.5 }
+      { name: 'glow_soft', color: 0xffffff, alpha: 0.4 },
+      { name: 'selection_ring', color: 0x44ff44, alpha: 0.8 },
+      { name: 'bomb_fuse', color: 0xff8844, alpha: 0.7 },
+      { name: 'lightning_spark', color: 0x44ffff, alpha: 0.8 },
+      { name: 'rainbow_shimmer', color: 0xff44ff, alpha: 0.6 }
     ];
 
     effectConfigs.forEach(({ name, color, alpha }) => {
       const graphics = this.make.graphics({ x: 0, y: 0 }, false);
-      graphics.fillStyle(color, alpha);
-      graphics.fillCircle(40, 40, 35);
+      const size = 80;
       
-      // Add glow effect
-      graphics.fillStyle(color, alpha * 0.3);
-      graphics.fillCircle(40, 40, 50);
+      if (name === 'selection_ring') {
+        // Create simple selection ring
+        graphics.lineStyle(4, color, alpha);
+        graphics.strokeCircle(size / 2, size / 2, 35);
+      } else {
+        // Create simple circular effects
+        graphics.fillStyle(color, alpha);
+        graphics.fillCircle(size / 2, size / 2, 30);
+      }
       
-      graphics.generateTexture(name, 80, 80);
+      graphics.generateTexture(name, size, size);
       graphics.destroy();
     });
   }
@@ -158,11 +164,11 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Create textures immediately in create phase
-    this.createGemTextures();
-    this.createEffectTextures();
+    // Create simple textures immediately in create phase
+    this.createSimpleGemTextures();
+    this.createSimpleEffectTextures();
     
-    // Skip atlas creation - use textures directly
+    // Start main menu after a brief delay
     this.time.delayedCall(100, () => {
       this.scene.start('MainMenuScene');
     });
@@ -171,17 +177,5 @@ export class PreloadScene extends Phaser.Scene {
   private generateAudio(): void {
     const soundGenerator = new SimpleSoundGenerator(this);
     soundGenerator.generateSimpleSounds();
-  }
-
-  private createPremiumGemTextures(): void {
-    const gemRenderer = new PremiumGemRenderer(this);
-    gemRenderer.createHighQualityGemTextures();
-    gemRenderer.createAdvancedEffectTextures();
-    gemRenderer.createParticleTextures();
-  }
-
-  private createAdvancedEffectTextures(): void {
-    // Additional advanced effect textures are created by PremiumGemRenderer
-    // This method is kept for future expansion
   }
 }
